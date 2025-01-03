@@ -1,0 +1,1 @@
+# appImage-script
