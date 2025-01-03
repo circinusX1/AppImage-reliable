@@ -4,6 +4,7 @@
 #### Note: Only on Linux x64 
 
 #### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
+####  resulting binary:                  /tmp/myapp.AppImage
 
 ```
 ./appimage.sh -FLAG=OPTION, where OPTION's are:
@@ -21,6 +22,7 @@
 
 ```
   ./appimage.sh -ARCH=x86_64 -APP=./clip_hist2 -QTROOT=/home/marius/Qt -ICON=/usr/share/hplip/data/images/16x16/quit.png
+
 ```
   * The Application package will be deployed as:
 
