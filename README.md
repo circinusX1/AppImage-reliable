@@ -17,8 +17,8 @@
 ```
 
 ### example
-  * You can build the clipboard grabber taks icon from the subfolder using QT
-  * copy the Release binary to same folder where the script is located
+  * You can build the clipboard grabber application icon from the subfolder using QTCreator or qmaking the pro file
+  * copy the build/Release/clip_hist2 binary to same folder where the script is located
 
 ```
   ./appimage.sh -ARCH=x86_64 -APP=./clip_hist2 -QTROOT=/home/marius/Qt -ICON=/usr/share/hplip/data/images/16x16/quit.png
