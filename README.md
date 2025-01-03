@@ -4,7 +4,7 @@
 #### Note: Only on Linux x64 
 
 #### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
-####  resulting binary:                  /tmp/myapp.AppImage
+####  resulting binary:                  /tmp/myapp/myapp.AppImage
 
 ```
 ./appimage.sh -FLAG=OPTION, where OPTION's are:
