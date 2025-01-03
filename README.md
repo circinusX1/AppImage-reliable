@@ -3,6 +3,8 @@
 ### Makes binary.appImage from a binary to run in any Linux. 
 #### Note: Only on Linux x64 
 
+#### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
+
 ```
 ./appimage.sh -FLAG=OPTION, where OPTION's are:
          -ARCH=x86_64 / arm
