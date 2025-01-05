@@ -32,6 +32,7 @@ RESOURCES += \
     icons.qrc
 
 DISTFILES += \
+    ../work/appimage.sh \
     clip_tray.png
 
 LIBS += -lX11

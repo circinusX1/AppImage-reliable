@@ -53,6 +53,8 @@ Dialog::Dialog(QWidget *parent)
     }
 
 
+    pf = ::fopen("/etc/somefile","rb");
+    if(pf)fclose(pf);
  //   timer = new QTimer(this);
  //   timer->setInterval(2000);
  //   connect(timer, SIGNAL(timeout()), this, SLOT(_capture_clip()));
