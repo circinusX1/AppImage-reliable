@@ -52,13 +52,11 @@ Dialog::Dialog(QWidget *parent)
         ::fclose(pf);
     }
 
-
-    pf = ::fopen("/etc/somefile","rb");
-    if(pf)fclose(pf);
  //   timer = new QTimer(this);
  //   timer->setInterval(2000);
  //   connect(timer, SIGNAL(timeout()), this, SLOT(_capture_clip()));
  //   timer->start();
+    setVisible(false);
 }
 
 Dialog::~Dialog()
@@ -107,6 +105,8 @@ void Dialog::setVisible(bool visible)
       //  timer->start();
         QRect screenrect = qApp->primaryScreen()->geometry();
         this->move(screenrect.right()-this->size().width(), screenrect.top()+40);
+        this->raise();
+        this->setWindowState(Qt::WindowState::WindowActive);
     }
     else
     {

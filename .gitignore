@@ -1,4 +1,6 @@
 utility/build
 work
+*.user
+utility/clip_hist2.pro.user
 
 
