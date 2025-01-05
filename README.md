@@ -6,6 +6,8 @@
 #### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
 ####  resulting binary:                  /tmp/myapp/myapp.AppImage
 
+It tries to resolve all dependencies libs locales files and pack them in the App.
+
 ```
 ./appimage.sh -FLAG=OPTION, where OPTION's are:
          -ARCH=x86_64 / arm
