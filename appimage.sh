@@ -8,7 +8,7 @@ if [[ -z $IS ]];then
     wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -P ${USR_BIN}
     chmod +x ${USR_BIN}/appimagetool-x86_64.AppImage
     IS=$(which appimagetool-x86_64.AppImage)
-    [[ -z $IS ]] && echo "Please add: ${USR_BIN} to ${HOME}/.bashrc as PATH=${PATH}:${USR_BIN}" && exit 1
+    [[ -z $IS ]] && echo "Please add: ${USR_BIN} to ${HOME}/.bashrc as PATH=${PATH}:${USR_BIN} and close this terminal, and rerun this script" && exit 1
 else
     echo "appimagetool-x86_64.AppImage found in: ${USR_BIN}"
 fi
@@ -31,9 +31,6 @@ if [[ 0 ]];then
     [[ -z ${APP_UTIL} ]] && echo "Cannot find AppRun" && exit 1
     [[ ! -f ./AppRun/build/src/hooks/libapprun_hooks.so ]] && echo "./AppRun/build/src/hooks/libapprun_hooks.so missing" && exit 1
 fi
-
-
-
 
 function usage()
 {
@@ -83,7 +80,7 @@ done
 APP_BIN=$(realpath ${APP_BIN})
 [[ -z ${ARCH} ]] && echo "-ARCH=arch is missing " && usage
 [[ -z ${ICON} ]] && echo "-ICON=icon.png is missing " && usage
-[[ ! -f ${APP_BIN} ]] && echo "Application ${APP_BIN} not found"
+[[ ! -f ${APP_BIN} ]] && echo "Application ${APP_BIN} not found" && usage
 
 if [[ ${ARCH} == "x86_64" ]];then
     ARCH="gcc_64"
@@ -94,8 +91,11 @@ else
     echo "-ARCH= should be x86_64 or arm" && usage
 fi
 
-
+# cp $APP_BIN ./
 APP=$(basename $APP_BIN)
+
+[[ ! -f $APP ]] && cp $APP_BIN $APP
+
 echo "Preparing /tmp/${APP}"
 DEST_APP="/tmp/${APP}"
 rm -rf ${DEST_APP}/*
@@ -105,12 +105,11 @@ ldd "${APP}" | \
 while read x; do
     if [[ $x =~ "=>" ]];then
         D=$(echo $x | awk '{print $3}')
-        echo "Found library ${D}"
+        echo "-Found library ${D}"
     else
         D=$(echo $x | awk '{print $1}')
-        echo "Found library ${D}"
+        echo "-Found library ${D}"
     fi
-    
     if [[ $D =~ "Qt" ]];then
         touch ${DEST_APP}/.qtdir
         break;
@@ -123,7 +122,7 @@ if [[ -f ${DEST_APP}/.qtdir ]];then
     rm -rf ${DEST_APP}/.qtdir
     if [[ ! -z $QT_DIR ]];then
         LD=$(find $QT_DIR -name lib |  grep ${ARCH})
-        echo "Found qt lib folder ${LD}";
+        echo "-Found qt lib folder ${LD}";
         QT_LIBS="${LD}"
     else
         echo "Your app has QT libraries. Please add the -QTROOT=path/to/Qt installation folder " && usage
@@ -133,6 +132,7 @@ fi
 echo "Creating ${DEST_APP}/AppDir/"
 
 [[ -d ${DEST_APP} ]] && rm -rf ${DEST_APP}
+ls -la ${DEST_APP}
 mkdir -p ${DEST_APP}/AppDir/runtime/compat/lib64/
 mkdir -p ${DEST_APP}/AppDir/runtime/compat/lib/
 mkdir -p ${DEST_APP}/AppDir/runtime/compat/usr/bin
@@ -147,47 +147,90 @@ cp ${APP_UTIL} ${DEST_APP}/AppDir/
 cp ./AppRun/build/src/hooks/libapprun_hooks.so  ${DEST_APP}/AppDir/usr/lib
 cp ${ICON} ${DEST_APP}/AppDir/usr/share/
 cp ${ICON} ${DEST_APP}/AppDir/
+DEST_APPDIR=${DEST_APP}/AppDir/
 ICN=$(basename ${ICON})
+
+# copy file to dest
+function cpf()
+{
+	FULL_NAME=$1
+	DIRNAME=$(dirname $1)
+	FILENAME=$(basename $1)
+	LINKNAME=$(readlink $1)
+	ODIRNAME=${DIRNAME}
+	[[ ${DIRNAME:0:1} == "/" ]] && DIRNAME=${DIRNAME:1}
+	DESTDIR=${DEST_APPDIR}/${DIRNAME}
+	DEST_FIL=${DEST_APPDIR}/${DIRNAME}/${FILENAME}
+	echo "File: $FULL_NAME"
+	echo "	Dir:  ${DIRNAME}"
+	echo "	File: ${FILENAME}"
+	echo "	Link: ${LINKNAME}"
+	echo "	Appd: ${DESTDIR}"
+	echo "	Appf: ${DEST_FIL}"
+	[[ ! -d ${DESTDIR} ]] && echo "	   Creating dir: ${DESTDIR}" && mkdir -p  ${DESTDIR}
+	[[ ! -f ${DESFILE} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
+	if [[ ! -z ${LINKNAME} ]];then
+		echo "         Deploying Link: ln -s ${DEST_FIL} ${LINKNAME}"
+		echo "pushd ${DESTDIR}"
+		pushd ${DESTDIR}
+		ln -s ${FILENAME} ${LINKNAME}
+		popd
+	#	sleep 1
+	fi
+	if [[ $DEST_FIL =~ ".so" ]];then
+		echo "Creating a symlink from /usr/lib/*.sos -> to /lib/x86_64-linux-gnu/libs"
+		echo "${DEST_APPDIR}lib"
+		[[ ! -d ${DEST_APPDIR}lib ]] && mkdir -p ${DEST_APPDIR}lib
+		pushd ${DEST_APPDIR}lib
+			ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}
+		popd
+	#	sleep 1
+		echo "${DEST_APPDIR}runtime/compat/lib64"
+		[[ ! -d ${DEST_APPDIR}runtime/compat/lib64 ]] && mkdir -p ${DEST_APPDIR}runtime/compat/lib64
+		pushd ${DEST_APPDIR}runtime/compat/lib64
+			ln -s ../../../lib/x86_64-linux-gnu/${FILENAME} ${FILENAME}
+		popd
+	#	sleep 1
+
+	fi
+	export DST_FILE=${DESFILE}
+	export DST_DIR=${DESTDIR}
+}
+
+
+
 
 LBS=("ld-linux-x86-64.so.2 libtinfo.so.6 libc.so.6 libdl.so.2")
 for L in  ${LBS[@]};do
     P="/usr/lib"
-    
+
     LF=$(find $P -name $L | grep 64)
     [[ -z $LF ]] && P="/lib" && LF=$(find $P -name $L)
-    echo "Processing lib $LF"
-    #read yn
-    if [[ -f "${LF}" ]];then
-        SL=$(readlink -f ${LF})
-        if [[ ! -z $SL ]];then
-            SL=$(realpath $SL)
-            echo "Deploying ${SL} -> ${DEST_APP}/AppDir/runtime/compat/lib64/"
-            cp -rf ${SL} ${DEST_APP}/AppDir/runtime/compat/lib64/ 
-        fi
-        echo "Deploying ${P}/${LF} -> ${DEST_APP}/AppDir/runtime/compat/lib64/"
-        cp -rf ${LF} ${DEST_APP}/AppDir/runtime/compat/lib64/
-    else
-        echo "$LF cannot be found in /usr/lib neither in  /lib" && exit 1    
-    fi
+    [[ -z $LF ]] && "ERROR: Required library: ${L} not found on the system" && exit 1
+
+    echo "Processing lib $LF=================================================="
+    cpf $LF
 done
+echo "-------------------------------------------------------------------------"
+echo "ls -la $DST_DIR "
+ls -l $DST_DIR/
+echo "-------------------------------------------------------------------------"
 
 
-
-
-LSYM=$(find /usr/lib -name ld-linux-x86-64.so.2 | grep 64)
-[[ -z ld-linux-x86-64.so.2 ]] && echo "ld-linux-x86-64.so.2 cannot be found on the system" && exit 1
-ln -s ${LSYM} ${DEST_APP}/AppDir/runtime/default/lib64/ld-linux-x86-64.so.2
-
+echo "----------------------------------------------------------------/bin/bash"
 WBASH=$(which bash)
-cp -rf ${WBASH} ${DEST_APP}/AppDir/bin/bash 
+cp -rf ${WBASH} ${DEST_APP}/AppDir/bin/bash
+mkdir -rf  ${DEST_APP}/AppDir/runtime/compat/usr/bin
 ln -s ../../../../bin/bash ${DEST_APP}/AppDir/runtime/compat/usr/bin/bash
 
 
+
+echo "-----------------------------------------------------------------/qt/base"
 if [[ ! -z $QT_LIBS ]];then
     cp -r ${QT_DIR}/Tools/QtCreator/lib/Qt/plugins/platforms ${DEST_APP}/AppDir/
 fi
 
-
+echo "-----------------------------------------------------------------ldd ${APP}<"
 ldd "${APP}" | \
 while read x; do
     if [[ $x =~ "=>" ]];then
@@ -200,25 +243,10 @@ while read x; do
     fi
     [[ -z ${D} ]] && continue
     [[ ${D} =~ "linux-vdso" ]] && continue
-    
-    if [[ ! -f ${DEST_APP}/AppDir/usr/lib/${D} ]];then
-        if [[ -f ${D} ]];then
-            LB=${D}
-        elif [[ -f /usr/${D} ]];then
-            LB=/usr/${D}
-        elif [[ -f /usr/lib/${D} ]];then
-            LB=/usr/lib/${D}
-        elif [[ -f /lib/${D} ]];then
-            LB=/lib/${D}
-        fi
-        if [[ -f ${LB} ]];then
-            echo "Deploying ${LB} -> ${DEST_APP}/AppDir/usr/lib/"
-            cp -rf ${LB} ${DEST_APP}/AppDir/usr/lib/
-        else
-            echo " ${D} not found" && exit 1            
-        fi
-    fi
+    cpf ${D}
 done
+echo "-----------------------------------------------------------------ldd ${APP}>"
+
 
 [[ -z $(which patchelf) ]] && echo "Please install: sudo apt install -y patchelf " && exit 1 
 ICN=$(echo "${ICN%.*}")
@@ -231,7 +259,7 @@ echo "Icon=${ICN}" >> ${DEST_APP}/AppDir/${APP}.desktop
 echo "Categories=Utility;" >> ${DEST_APP}/AppDir/${APP}.desktop
 echo ""  >> ${DEST_APP}/AppDir/${APP}.desktop
 chmod +x ${DEST_APP}/AppDir/${APP}.desktop
-chnmod +x ${DEST_APP}/AppDir/bin/*
+chmod +x ${DEST_APP}/AppDir/bin/*
 
 CMDLINE="/bin/${APP}"
 
@@ -245,7 +273,7 @@ echo -e '#!/bin/bash\n'\
 '\n'\
 'export PATH="${APPDIR}:${APPDIR}/usr/bin:${APPDIR}/usr/sbin:${APPDIR}/bin:${PATH}:${APPDIR}/platforms"\n'\
 'export XDG_DATA_DIRS="./share/:/usr/share/gnome:/usr/local/share/:/usr/share/:${XDG_DATA_DIRS}"\n'\
-'export LD_LIBRARY_PATH="./usr/lib:${APPDIR}/usr/lib:${LD_LIBRARY_PATH}"\n'\
+'export LD_LIBRARY_PATH="${APPDIR}/lib:${APPDIR}/lib/x86_64-linux-gnu:${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"\n'\
 'export XDG_DATA_DIRS="${APPDIR}"/usr/share/:"${XDG_DATA_DIRS}":/usr/share/gnome/:/usr/local/share/:/usr/share/:${APPDIR}/usr/lib\n'\
 'export GSETTINGS_SCHEMA_DIR="${APPDIR}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}"\n'\
 '\n' > ${DEST_APP}/AppDir/AppRun
@@ -296,16 +324,7 @@ if [[ $yn == 'n' || $yn == 'N' ]]; then
     	libfp=$(echo $x | awk -F"\"" '{print$2}')
     	[[ ${libfp:0:1} == "." ]] && continue
     	lib=$(basename $libfp)
-    	if [[ ! -f ${DEST_APP}/AppDir/usr/lib/$lib ]];then
-    		echo "Resolving $lib"
-    		ll=$(find ${1} -name $lib | head -1)
-    		if [[ ! -z $ll ]];then
-    			echo "  Found and copying $ll -> ./AppDir/usr/lib"
-    			cp $ll ${DEST_APP}/AppDir/usr/lib
-    		else
-    			echo "$lib: NOT found"
-    		fi
-    	fi
+	cpf $lib
     done
     
     echo "rebuilding again" 
