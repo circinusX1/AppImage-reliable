@@ -40,7 +40,7 @@ function usage()
          -ICON=icon_file.png\n\
          -QTROOT=path to Qt, aka: /home/${USER}/Qt, optional\n\
          -LIBS=path to extra libs, optional\n\n"
-    exit 1     
+    exit 1
 }
 
 
@@ -54,7 +54,7 @@ while [[ $# -gt 0 ]]; do
    -ICON=*)
         ICON="${1#*=}"
         shift
-    ;;    
+    ;;
     -QTROOT=*)
         QT_DIR="${1#*=}"
         [[ ${QT_DIR:0:1} != '/' ]] && echo "pass the full path to Qt: QT_DIR=/full/path/to/Qt" && exit 1
@@ -153,69 +153,68 @@ ICN=$(basename ${ICON})
 # copy file to dest
 function cpf()
 {
-	FULL_NAME=$1
-	DIRNAME=$(dirname $1)
-	FILENAME=$(basename $1)
-	LINKNAME=$(readlink $1)
-	REALFILE=$(realpath $1)
-	ODIRNAME=${DIRNAME}
-	[[ ${DIRNAME:0:1} == "/" ]] && DIRNAME=${DIRNAME:1}
-	DESTDIR=${DEST_APPDIR}${DIRNAME}
-	DEST_FIL=${DEST_APPDIR}${DIRNAME}/${FILENAME}
-	echo "File: $FULL_NAME"
-	echo "	Dir:  ${DIRNAME}"
-	echo "	File: ${FILENAME}"
-	echo "	Link: ${LINKNAME}"
-	echo "	Appd: ${DESTDIR}"
-	echo "	Appf: ${DEST_FIL}"
-	echo "  Real: ${REALFILE}"
+    FULL_NAME=$1
+    DIRNAME=$(dirname $1)
+    FILENAME=$(basename $1)
+    LINKNAME=$(readlink $1)
+    REALFILE=$(realpath $1)
+    ODIRNAME=${DIRNAME}
+    [[ ${DIRNAME:0:1} == "/" ]] && DIRNAME=${DIRNAME:1}
+    DESTDIR=${DEST_APPDIR}${DIRNAME}
+    DEST_FIL=${DEST_APPDIR}${DIRNAME}/${FILENAME}
+    echo "File: $FULL_NAME"
+    echo "	Dir:  ${DIRNAME}"
+    echo "	File: ${FILENAME}"
+    echo "	Link: ${LINKNAME}"
+    echo "	Appd: ${DESTDIR}"
+    echo "	Appf: ${DEST_FIL}"
+    echo "  Real: ${REALFILE}"
 
 
-	[[ ! -d ${DESTDIR} ]] && echo "	   Creating dir: ${DESTDIR}" && mkdir -p  ${DESTDIR}
-	[[ ! -f ${DESFILE} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
-	if [[ ! -z ${LINKNAME} ]];then
-		echo "         Deploying Link: ln -s ${DEST_FIL} ${LINKNAME}"
-		echo ">>>>>>>>>>>pushd ${DESTDIR}<<<<<<<<<"
-		pushd ${DESTDIR}
-		    echo "CWD=$(pwd)"
-		    echo "ln -s ${FILENAME} ${LINKNAME}"
-		    echo "cp -rf ${REALFILE} ${FILENAME}"
-		    DR=$(dirname ${FILENAME})
-		    [[ ! -d $DR ]] && mkdir -p $DR
-		    ln -s ${FILENAME} ${LINKNAME}
-		    cp -rf ${REALFILE} ${FILENAME}
-		    echo "--------------------"
-		popd
-	#	sleep 1
-	fi
-	if [[ $DEST_FIL =~ ".so" ]];then
-		echo "Creating a symlink from /usr/lib/*.so's -> to /lib/x86_64-linux-gnu/libs"
-		
-		[[ ! -d ${DEST_APPDIR}lib ]] && mkdir -p ${DEST_APPDIR}lib
-		echo ">>>>>>>>>>>pushd ${DEST_APPDIR}lib <<<<<<<<<<"
-		pushd ${DEST_APPDIR}lib
-    		echo "CWD=$(pwd)" 
-			echo "ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}"
-			echo "cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}"
-		    DR=$(dirname x86_64-linux-gnu/${FILENAME})
-		    [[ ! -d $DR ]] && mkdir -p $DR
-
-			ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}
-			cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}
+    [[ ! -d ${DESTDIR} ]] && echo "	   Creating dir: ${DESTDIR}" && mkdir -p  ${DESTDIR}
+    [[ ! -f ${DESFILE} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
+    if [[ ! -z ${LINKNAME} ]];then
+        echo "         Deploying Link: ln -s ${DEST_FIL} ${LINKNAME}"
+        echo ">>>>>>>>>>>pushd ${DESTDIR}<<<<<<<<<"
+        pushd ${DESTDIR}
+            echo "CWD=$(pwd)"
+            echo "ln -s ${FILENAME} ${LINKNAME}"
+            echo "cp -rf ${REALFILE} ${FILENAME}"
+            DR=$(dirname ${FILENAME})
+            [[ ! -d $DR ]] && mkdir -p $DR
+            ln -s ${FILENAME} ${LINKNAME}
+            cp -rf ${REALFILE} ${FILENAME}
             echo "--------------------"
-		popd
-	#	sleep 1
-		echo "${DEST_APPDIR}runtime/compat/lib64"
-		[[ ! -d ${DEST_APPDIR}runtime/compat/lib64 ]] && mkdir -p ${DEST_APPDIR}runtime/compat/lib64
-		pushd ${DEST_APPDIR}runtime/compat/lib64
-			ln -s ../../../lib/x86_64-linux-gnu/${FILENAME} ${FILENAME}
-		popd
-	#	sleep 1
+        popd
+    #	sleep 1
+    fi
+    if [[ $DEST_FIL =~ ".so" ]];then
+        echo "Creating a symlink from /usr/lib/*.so's -> to /lib/x86_64-linux-gnu/libs"
 
-	fi
-	export DST_FILE=${DESFILE}
-	export DST_DIR=${DESTDIR}
-	read YN
+        [[ ! -d ${DEST_APPDIR}lib ]] && mkdir -p ${DEST_APPDIR}lib
+        echo ">>>>>>>>>>>pushd ${DEST_APPDIR}lib <<<<<<<<<<"
+        pushd ${DEST_APPDIR}lib
+            echo "CWD=$(pwd)"
+            echo "ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}"
+            echo "cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}"
+            DR=$(dirname x86_64-linux-gnu/${FILENAME})
+            [[ ! -d $DR ]] && mkdir -p $DR
+
+            ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}
+            cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}
+            echo "--------------------"
+        popd
+    #	sleep 1
+        echo "${DEST_APPDIR}runtime/compat/lib64"
+        [[ ! -d ${DEST_APPDIR}runtime/compat/lib64 ]] && mkdir -p ${DEST_APPDIR}runtime/compat/lib64
+        pushd ${DEST_APPDIR}runtime/compat/lib64
+            ln -s ../../../lib/x86_64-linux-gnu/${FILENAME} ${FILENAME}
+        popd
+    #	sleep 1
+
+    fi
+    export DST_FILE=${DESFILE}
+    export DST_DIR=${DESTDIR}
 }
 
 
@@ -269,7 +268,7 @@ done
 echo "-----------------------------------------------------------------ldd ${APP}>"
 
 
-[[ -z $(which patchelf) ]] && echo "Please install: sudo apt install -y patchelf " && exit 1 
+[[ -z $(which patchelf) ]] && echo "Please install: sudo apt install -y patchelf " && exit 1
 ICN=$(echo "${ICN%.*}")
 echo "[Desktop Entry]" > ${DEST_APP}/AppDir/${APP}.desktop
 echo "Name=${APP} Application" >> ${DEST_APP}/AppDir/${APP}.desktop
@@ -311,14 +310,14 @@ chmod +x ${DEST_APP}/AppDir/AppRun
 echo "--------------------------------------------------------------------------"
 pushd  ${DEST_APP}
     echo "Running on $(pwd)------------------"
-    
+
     export APPDIR=./AppDir
     export ARCH=x86_64
     export XDG_DATA_DIR=/usr/share
     appimagetool-x86_64.AppImage AppDir ${APP}.AppImage
 popd
 echo "--------------------------------------------------------------------------"
-ls -ltr ${DEST_APP} 
+ls -ltr ${DEST_APP}
 
 echo "testing app dir-----------------------------------------------------------"
 # copy more
@@ -333,34 +332,34 @@ echo "Did it ran ?"
 read yn
 if [[ $yn == 'n' || $yn == 'N' ]]; then
     echo "Attempting to fix it"
-    
+
     pushd ${DEST_APP}/AppDir
-	    echo "tracing: ./AppRun ./bin/${APP}"
- 	    strace "./AppRun ./bin/${APP}" > /tmp/apprun_trace.log 2>&1
+        echo "tracing: ./AppRun ./bin/${APP}"
+        strace "./AppRun ./bin/${APP}" > /tmp/apprun_trace.log 2>&1
     popd
-    
-    
+
+
     grep "No such file or directory" /tmp/apprun_trace.log  | grep lib | grep openat | \
     while read x; do
-    	libfp=$(echo $x | awk -F"\"" '{print$2}')
-    	[[ ${libfp:0:1} == "." ]] && continue
-    	lib=$(basename $libfp)
-	cpf $lib
+        libfp=$(echo $x | awk -F"\"" '{print$2}')
+        [[ ${libfp:0:1} == "." ]] && continue
+        lib=$(basename $libfp)
+    cpf $lib
     done
-    
-    echo "rebuilding again" 
-           
+
+    echo "rebuilding again"
+
     echo "--------------------------------------------------------------------------"
     pushd  ${DEST_APP}
         echo "Running on $(pwd)------------------"
-        
+
         export APPDIR=./AppDir
         export ARCH=x86_64
         export XDG_DATA_DIR=/usr/share
         appimagetool-x86_64.AppImage AppDir ${APP}.AppImage
     popd
     echo "--------------------------------------------------------------------------"
-    ls -ltr ${DEST_APP} 
+    ls -ltr ${DEST_APP}
 
     echo "testing app dir-----------------------------------------------------------"
     # copy more
@@ -377,7 +376,7 @@ echo "your app is in /tmp/..."
 # echo ${DEST_APP}
 # echo 'TARGET=${DEST_APP}/AppDir/bin/bash'
 # echo 'LINKER=$(patchelf --print-interpreter \"$TARGET\")'
-# echo 'patchelf --set-interpreter \"${LINKER:1}\" \"$TARGET\"' 
+# echo 'patchelf --set-interpreter \"${LINKER:1}\" \"$TARGET\"'
 
 
 
