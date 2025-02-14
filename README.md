@@ -1,4 +1,4 @@
-# appImage-script
+# Very reliable AppImage APP generator
 ## A script which produces *.AppImage 95% rate of success
 
 ### Makes binary.appImage from a binary to run in any Linux. 
