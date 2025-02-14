@@ -157,32 +157,52 @@ function cpf()
 	DIRNAME=$(dirname $1)
 	FILENAME=$(basename $1)
 	LINKNAME=$(readlink $1)
+	REALFILE=$(realpath $1)
 	ODIRNAME=${DIRNAME}
 	[[ ${DIRNAME:0:1} == "/" ]] && DIRNAME=${DIRNAME:1}
-	DESTDIR=${DEST_APPDIR}/${DIRNAME}
-	DEST_FIL=${DEST_APPDIR}/${DIRNAME}/${FILENAME}
+	DESTDIR=${DEST_APPDIR}${DIRNAME}
+	DEST_FIL=${DEST_APPDIR}${DIRNAME}/${FILENAME}
 	echo "File: $FULL_NAME"
 	echo "	Dir:  ${DIRNAME}"
 	echo "	File: ${FILENAME}"
 	echo "	Link: ${LINKNAME}"
 	echo "	Appd: ${DESTDIR}"
 	echo "	Appf: ${DEST_FIL}"
+	echo "  Real: ${REALFILE}"
+
+
 	[[ ! -d ${DESTDIR} ]] && echo "	   Creating dir: ${DESTDIR}" && mkdir -p  ${DESTDIR}
 	[[ ! -f ${DESFILE} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
 	if [[ ! -z ${LINKNAME} ]];then
 		echo "         Deploying Link: ln -s ${DEST_FIL} ${LINKNAME}"
-		echo "pushd ${DESTDIR}"
+		echo ">>>>>>>>>>>pushd ${DESTDIR}<<<<<<<<<"
 		pushd ${DESTDIR}
-		ln -s ${FILENAME} ${LINKNAME}
+		    echo "CWD=$(pwd)"
+		    echo "ln -s ${FILENAME} ${LINKNAME}"
+		    echo "cp -rf ${REALFILE} ${FILENAME}"
+		    DR=$(dirname ${FILENAME})
+		    [[ ! -d $DR ]] && mkdir -p $DR
+		    ln -s ${FILENAME} ${LINKNAME}
+		    cp -rf ${REALFILE} ${FILENAME}
+		    echo "--------------------"
 		popd
 	#	sleep 1
 	fi
 	if [[ $DEST_FIL =~ ".so" ]];then
-		echo "Creating a symlink from /usr/lib/*.sos -> to /lib/x86_64-linux-gnu/libs"
-		echo "${DEST_APPDIR}lib"
+		echo "Creating a symlink from /usr/lib/*.so's -> to /lib/x86_64-linux-gnu/libs"
+		
 		[[ ! -d ${DEST_APPDIR}lib ]] && mkdir -p ${DEST_APPDIR}lib
+		echo ">>>>>>>>>>>pushd ${DEST_APPDIR}lib <<<<<<<<<<"
 		pushd ${DEST_APPDIR}lib
+    		echo "CWD=$(pwd)" 
+			echo "ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}"
+			echo "cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}"
+		    DR=$(dirname x86_64-linux-gnu/${FILENAME})
+		    [[ ! -d $DR ]] && mkdir -p $DR
+
 			ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}
+			cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}
+            echo "--------------------"
 		popd
 	#	sleep 1
 		echo "${DEST_APPDIR}runtime/compat/lib64"
@@ -195,6 +215,7 @@ function cpf()
 	fi
 	export DST_FILE=${DESFILE}
 	export DST_DIR=${DESTDIR}
+	read YN
 }
 
 
