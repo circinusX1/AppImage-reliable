@@ -349,10 +349,8 @@ if [[ $yn == 'n' || $yn == 'N' ]]; then
         read yn
         ./${APP}.AppImage
     popd
-
-        
 fi
-
+echo "your app is in /tmp/..."
 
 
 # echo ${DEST_APP}

@@ -1,0 +1,69 @@
+# language target
+language: c
+compiler: gcc
+os: linux
+dist: xenial
+sudo: required
+
+matrix:
+  include:
+    - env:
+        - TARGET_ARCH=x86_64
+        - TARGET_DEB_ARCH=amd64
+        - SETUP_FOREING_ARCH_REPOSITORY=False
+    - env:
+        - TARGET_ARCH=i386
+        - TARGET_DEB_ARCH=i386
+        - SETUP_FOREING_ARCH_REPOSITORY=False
+        - CFLAGS=-m32
+      install:
+        - sudo dpkg --add-architecture i386
+        - sudo apt-get update -y
+        - sudo apt-get install -y g++-multilib
+    - env:
+        - TARGET_ARCH=aarch64
+        - TARGET_DEB_ARCH=arm64
+        - SETUP_FOREING_ARCH_REPOSITORY=True
+    - env:
+        - TARGET_ARCH=gnueabihf
+        - TARGET_DEB_ARCH=armhf
+        - SETUP_FOREING_ARCH_REPOSITORY=True
+install:
+  - 'if [ "$SETUP_FOREING_ARCH_REPOSITORY" == "True" ]; then
+      sudo dpkg --add-architecture $TARGET_DEB_ARCH;
+      echo "deb [arch=$TARGET_DEB_ARCH] http://ports.ubuntu.com/ubuntu-ports xenial main restricted multiverse universe" | sudo tee /etc/apt/sources.list.d/ubuntu-ports.list;
+      echo "deb [arch=$TARGET_DEB_ARCH] http://ports.ubuntu.com/ubuntu-ports xenial-updates main restricted multiverse universe" | sudo tee /etc/apt/sources.list.d/ubuntu-ports.list;
+      echo "deb [arch=$TARGET_DEB_ARCH] http://ports.ubuntu.com/ubuntu-ports xenial-security main restricted multiverse universe" | sudo tee /etc/apt/sources.list.d/ubuntu-ports.list;
+      sudo apt-get update -y;
+      sudo apt-get install -y crossbuild-essential-$TARGET_DEB_ARCH;
+    fi'
+
+script:
+  - cmake . -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="cmake/${TARGET_ARCH}-toolchain.cmake"
+  - make -j$(nproc)
+  - if [ "$(dpkg-architecture -q DEB_HOST_ARCH)" == "$TARGET_DEB_ARCH" ]; then ctest --verbose; fi
+  - mv src/hooks/libapprun_hooks.so libapprun_hooks-$TARGET_DEB_ARCH.so
+  - mv src/apprun/AppRun AppRun-$TARGET_DEB_ARCH
+
+  - cmake . -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="cmake/${TARGET_ARCH}-toolchain.cmake"
+  - make -j$(nproc)
+  - mv src/hooks/libapprun_hooks.so libapprun_hooks-debug-$TARGET_DEB_ARCH.so
+  - mv src/apprun/AppRun AppRun-debug-$TARGET_DEB_ARCH
+
+
+# make the AppImage bundle
+after_success:
+  # listing the result
+  - ls -lh src/*.so
+  # get the tag version
+
+  - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
+  - bash upload.sh libapprun_hooks-$TARGET_DEB_ARCH.so AppRun-$TARGET_DEB_ARCH libapprun_hooks-debug-$TARGET_DEB_ARCH.so AppRun-debug-$TARGET_DEB_ARCH
+
+branches:
+  except:
+    # Do not build tags that we create when we upload to GitHub Releases
+    - /^(?i:continuous.*)$/
+
+notifications:
+  email: false

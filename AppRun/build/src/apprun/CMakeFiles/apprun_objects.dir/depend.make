@@ -1,0 +1,2 @@
+# Empty dependencies file for apprun_objects.
+# This may be replaced when dependencies are built.
