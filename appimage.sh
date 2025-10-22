@@ -39,6 +39,7 @@ function usage()
          -APP=application_binary\n\
          -ICON=icon_file.png\n\
          -QTROOT=path to Qt, aka: /home/${USER}/Qt, optional\n\
+         -QTGCCVER=GCC QT version from Qt/X.Y.Z.gcc The X.Y.Z\n\
          -LIBS=path to extra libs, optional\n\n"
     exit 1
 }
@@ -60,6 +61,11 @@ while [[ $# -gt 0 ]]; do
         [[ ${QT_DIR:0:1} != '/' ]] && echo "pass the full path to Qt: QT_DIR=/full/path/to/Qt" && exit 1
         shift
     ;;
+    -QTGCCVER=*)
+        QT_GCC_VER="${1#*=}"
+        [[ ! ${QT_GCC_VER} =~ '.' ]] && echo "pass the GCC VERSION aka; 6.9.3" && exit 1
+        shift
+    ;;    
     -LIBS=*)
         LIBS_DIR="${LIBS_DIR}:${1#*=}"
         shift
@@ -76,6 +82,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+[[ ! -z ${QT_DIR} && -z ${QT_GCC_VER} ]] && echo "-QTGCCVER=GCC version X.Y.Z is missing " && usage
 [[ -z ${APP_BIN} ]] && echo "-APP=application is missing " && usage
 APP_BIN=$(realpath ${APP_BIN})
 [[ -z ${ARCH} ]] && echo "-ARCH=arch is missing " && usage
@@ -247,7 +254,16 @@ ln -s ../../../../bin/bash ${DEST_APP}/AppDir/runtime/compat/usr/bin/bash
 
 echo "-----------------------------------------------------------------/qt/base"
 if [[ ! -z $QT_LIBS ]];then
-    cp -r ${QT_DIR}/Tools/QtCreator/lib/Qt/plugins/platforms ${DEST_APP}/AppDir/
+    mkdir -p ${DEST_APP}/AppDir/plugins/platforms
+	mkdir -p ${DEST_APP}/AppDir/plugins/imageformats
+	
+    cp -rf ${QT_DIR}/${QT_GCC_VER}/gcc_64/plugins/. ${DEST_APP}/AppDir/plugins
+    
+    for libf in "libqgif.so"  "libqico.so"  "libqjpeg.so"  "libqsvg.so";do
+    	FL=$(find ${QT_DIR} -name $libf | grep ${QT_GCC_VER})
+    	echo "cp ${FL} ${DEST_APP}/AppDir/plugins/imageformats"
+    	cp -rf ${FL} ${DEST_APP}/AppDir/plugins/imageformats/
+    done 	
 fi
 
 echo "-----------------------------------------------------------------ldd ${APP}<"
@@ -323,7 +339,7 @@ echo "testing app dir-----------------------------------------------------------
 # copy more
 
 pushd ${DEST_APP}
-    echo "Press enter to run app...."
+    echo "Press enter to run app: ${DEST_APP}/${APP}.AppImage"
     read yn
     ./${APP}.AppImage
 popd
