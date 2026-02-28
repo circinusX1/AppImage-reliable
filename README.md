@@ -7,6 +7,12 @@
 #### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
 ####  resulting binary:                  /tmp/myapp/myapp.AppImage
 
+* Found a funny video:
+* 
+    * [![Found this funny video](https://ghitara.com/images/local_gith.png)](https://www.youtube.com/watch?v=jzLxYhG_FSU)
+ 
+    * 
+
 It tries to resolve all dependencies libs locales files and pack them in the App.
 
 ```
