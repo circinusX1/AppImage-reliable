@@ -8,8 +8,9 @@
 ####  resulting binary:                  /tmp/myapp/myapp.AppImage
 
 * Found a funny video:
+
 * 
-    * [![Found this funny video](https://ghitara.com/images/local_gith.png)](https://www.youtube.com/watch?v=jzLxYhG_FSU)
+    * [![Found this funny video](https://ghitara.com/images/local_gith.png)](https://www.youtube.com/watch?v=OgA7tpEWMzg)
  
     * 
 
