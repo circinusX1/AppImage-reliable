@@ -5,12 +5,10 @@
 #### Note: Only on Linux x64 
 
 ## copy the script where your binary is:
-./appimage.sh -ARCH=x86_64 -APP=WebRiffStudio -ICON=/home/marius/Pictures/icon.png -QTROOT=/home/marius/Qt -
 
-
-#### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt QTGCCVER=6.7.3
+#### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt -QTGCCVER=6.7.3
 ####  resulting binary:                  /tmp/myapp/myapp.AppImage
-###### where QTGCCVER is the /home/marius/Qt/6,7.3 < this version
+###### where -QTGCCVER is the /home/marius/Qt/6,7.3 < this version
 
  
 
