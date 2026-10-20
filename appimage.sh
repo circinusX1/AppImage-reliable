@@ -16,7 +16,7 @@ fi
 
 if [[ 0 ]];then
     if [[ ! -d  AppRun ]] ;then
-        echo "We are about to git out https://github.com/AppImageCrafters/AppRun and build it. Press enter to conitnue Ctrl+C to exit"
+        echo "We are about to get out https://github.com/AppImageCrafters/AppRun and build it. Press enter to continue Ctrl+C to exit"
         read YN
         git clone https://github.com/AppImageCrafters/AppRun
         pushd AppRun
@@ -98,7 +98,6 @@ else
     echo "-ARCH= should be x86_64 or arm" && usage
 fi
 
-# cp $APP_BIN ./
 APP=$(basename $APP_BIN)
 
 [[ ! -f $APP ]] && cp $APP_BIN $APP
@@ -123,7 +122,7 @@ while read x; do
     fi
 done
 
-echo "Running on QT arhitecture: $ARCH"
+echo "Running on QT architecture: $ARCH"
 
 if [[ -f ${DEST_APP}/.qtdir ]];then
     rm -rf ${DEST_APP}/.qtdir
@@ -150,8 +149,8 @@ mkdir -p ${DEST_APP}/AppDir/usr/lib
 mkdir -p ${DEST_APP}/AppDir/usr/bin
 mkdir -p ${DEST_APP}/AppDir/usr/share/locale/en/LC_MESSAGES
 cp -rf ${APP} ${DEST_APP}/AppDir/bin/
-cp ${APP_UTIL} ${DEST_APP}/AppDir/
-cp ./AppRun/build/src/hooks/libapprun_hooks.so  ${DEST_APP}/AppDir/usr/lib
+[[ ! -z ${APP_UTIL} ]] && cp ${APP_UTIL} ${DEST_APP}/AppDir/
+[[ -f ./AppRun/build/src/hooks/libapprun_hooks.so ]] && cp ./AppRun/build/src/hooks/libapprun_hooks.so  ${DEST_APP}/AppDir/usr/lib
 cp ${ICON} ${DEST_APP}/AppDir/usr/share/
 cp ${ICON} ${DEST_APP}/AppDir/
 DEST_APPDIR=${DEST_APP}/AppDir/
@@ -161,6 +160,7 @@ ICN=$(basename ${ICON})
 function cpf()
 {
     FULL_NAME=$1
+    [[ -z ${FULL_NAME} || ! -f ${FULL_NAME} ]] && return
     DIRNAME=$(dirname $1)
     FILENAME=$(basename $1)
     LINKNAME=$(readlink $1)
@@ -179,52 +179,33 @@ function cpf()
 
 
     [[ ! -d ${DESTDIR} ]] && echo "	   Creating dir: ${DESTDIR}" && mkdir -p  ${DESTDIR}
-    [[ ! -f ${DESFILE} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
+    [[ ! -f ${DEST_FIL} ]] && echo "    Deploying $FULL_NAME->${DEST_FIL}" && cp ${FULL_NAME} ${DEST_FIL}
     if [[ ! -z ${LINKNAME} ]];then
         echo "         Deploying Link: ln -s ${DEST_FIL} ${LINKNAME}"
-        echo ">>>>>>>>>>>pushd ${DESTDIR}<<<<<<<<<"
-        pushd ${DESTDIR}
-            echo "CWD=$(pwd)"
-            echo "ln -s ${FILENAME} ${LINKNAME}"
-            echo "cp -rf ${REALFILE} ${FILENAME}"
+        pushd ${DESTDIR} >/dev/null
             DR=$(dirname ${FILENAME})
             [[ ! -d $DR ]] && mkdir -p $DR
-            ln -s ${FILENAME} ${LINKNAME}
+            ln -sf ${FILENAME} ${LINKNAME}
             cp -rf ${REALFILE} ${FILENAME}
-            echo "--------------------"
-        popd
-    #	sleep 1
+        popd >/dev/null
     fi
-    if [[ $DEST_FIL =~ ".so" ]];then
-        echo "Creating a symlink from /usr/lib/*.so's -> to /lib/x86_64-linux-gnu/libs"
-
+    if [[ ${DEST_FIL} =~ ".so" ]];then
         [[ ! -d ${DEST_APPDIR}lib ]] && mkdir -p ${DEST_APPDIR}lib
-        echo ">>>>>>>>>>>pushd ${DEST_APPDIR}lib <<<<<<<<<<"
-        pushd ${DEST_APPDIR}lib
-            echo "CWD=$(pwd)"
-            echo "ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}"
-            echo "cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}"
+        pushd ${DEST_APPDIR}lib >/dev/null
             DR=$(dirname x86_64-linux-gnu/${FILENAME})
             [[ ! -d $DR ]] && mkdir -p $DR
-
-            ln -s x86_64-linux-gnu/${FILENAME} ${FILENAME}
+            ln -sf x86_64-linux-gnu/${FILENAME} ${FILENAME}
             cp -rf ${REALFILE} x86_64-linux-gnu/${FILENAME}
-            echo "--------------------"
-        popd
-    #	sleep 1
-        echo "${DEST_APPDIR}runtime/compat/lib64"
-        [[ ! -d ${DEST_APPDIR}runtime/compat/lib64 ]] && mkdir -p ${DEST_APPDIR}runtime/compat/lib64
-        pushd ${DEST_APPDIR}runtime/compat/lib64
-            ln -s ../../../lib/x86_64-linux-gnu/${FILENAME} ${FILENAME}
-        popd
-    #	sleep 1
+        popd >/dev/null
 
+        [[ ! -d ${DEST_APPDIR}runtime/compat/lib64 ]] && mkdir -p ${DEST_APPDIR}runtime/compat/lib64
+        pushd ${DEST_APPDIR}runtime/compat/lib64 >/dev/null
+            ln -sf ../../../lib/x86_64-linux-gnu/${FILENAME} ${FILENAME}
+        popd >/dev/null
     fi
-    export DST_FILE=${DESFILE}
+    export DST_FILE=${DEST_FIL}
     export DST_DIR=${DESTDIR}
 }
-
-
 
 
 LBS=("ld-linux-x86-64.so.2 libtinfo.so.6 libc.so.6 libdl.so.2")
@@ -233,11 +214,23 @@ for L in  ${LBS[@]};do
 
     LF=$(find $P -name $L | grep 64)
     [[ -z $LF ]] && P="/lib" && LF=$(find $P -name $L)
-    [[ -z $LF ]] && "ERROR: Required library: ${L} not found on the system" && exit 1
+    [[ -z $LF ]] && echo "ERROR: Required library: ${L} not found on the system" && exit 1
 
     echo "Processing lib $LF=================================================="
     cpf $LF
 done
+
+# Fix for Qt 6.5+ missing xcb-cursor dependency inside AppImage
+XCB_CURSOR=$(find /usr -name "libxcb-cursor.so.0*" 2>/dev/null | head -n 1)
+if [[ ! -z ${XCB_CURSOR} ]]; then
+    echo "Processing mandatory Qt xcb-cursor lib: ${XCB_CURSOR}"
+    cp -f ${XCB_CURSOR} ${DEST_APPDIR}/usr/lib/
+    mkdir -p ${DEST_APPDIR}/lib/
+    cp -f ${XCB_CURSOR} ${DEST_APPDIR}/lib/
+else
+    echo "WARNING: libxcb-cursor.so.0 not found on host system! You may need: sudo apt install libxcb-cursor0"
+fi
+
 echo "-------------------------------------------------------------------------"
 echo "ls -la $DST_DIR "
 ls -l $DST_DIR/
@@ -247,8 +240,8 @@ echo "-------------------------------------------------------------------------"
 echo "----------------------------------------------------------------/bin/bash"
 WBASH=$(which bash)
 cp -rf ${WBASH} ${DEST_APP}/AppDir/bin/bash
-mkdir -rf  ${DEST_APP}/AppDir/runtime/compat/usr/bin
-ln -s ../../../../bin/bash ${DEST_APP}/AppDir/runtime/compat/usr/bin/bash
+mkdir -p ${DEST_APP}/AppDir/runtime/compat/usr/bin
+ln -sf ../../../../bin/bash ${DEST_APP}/AppDir/runtime/compat/usr/bin/bash
 
 
 
@@ -297,8 +290,7 @@ echo ""  >> ${DEST_APP}/AppDir/${APP}.desktop
 chmod +x ${DEST_APP}/AppDir/${APP}.desktop
 chmod +x ${DEST_APP}/AppDir/bin/*
 
-CMDLINE="/bin/${APP}"
-
+# AppRun with proper Qt Plugin Paths & Environment Variables
 echo -e '#!/bin/bash\n'\
 'THIS="$0"\n'\
 'BINAR="$1"\n'\
@@ -310,6 +302,8 @@ echo -e '#!/bin/bash\n'\
 'export PATH="${APPDIR}:${APPDIR}/usr/bin:${APPDIR}/usr/sbin:${APPDIR}/bin:${PATH}:${APPDIR}/platforms"\n'\
 'export XDG_DATA_DIRS="./share/:/usr/share/gnome:/usr/local/share/:/usr/share/:${XDG_DATA_DIRS}"\n'\
 'export LD_LIBRARY_PATH="${APPDIR}/lib:${APPDIR}/lib/x86_64-linux-gnu:${APPDIR}/usr/lib:${APPDIR}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"\n'\
+'export QT_PLUGIN_PATH="${APPDIR}/plugins"\n'\
+'export QT_QPA_PLATFORM_PLUGIN_PATH="${APPDIR}/plugins/platforms"\n'\
 'export XDG_DATA_DIRS="${APPDIR}"/usr/share/:"${XDG_DATA_DIRS}":/usr/share/gnome/:/usr/local/share/:/usr/share/:${APPDIR}/usr/lib\n'\
 'export GSETTINGS_SCHEMA_DIR="${APPDIR}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}"\n'\
 '\n' > ${DEST_APP}/AppDir/AppRun
@@ -317,90 +311,29 @@ echo -e '#!/bin/bash\n'\
 echo -e "if [ -z \${BINAR} ];then\n\
     BINAR=bin/${APP}\n\
 fi\n \
-BIN="\$APPDIR/\$BINAR"\n\
+BIN=\"\$APPDIR/\$BINAR\"\n\
 exec \"\$BIN\"\n\
 \n\n" >> ${DEST_APP}/AppDir/AppRun
 chmod +x ${DEST_APP}/AppDir/AppRun
 
 
 echo "--------------------------------------------------------------------------"
-pushd  ${DEST_APP}
+pushd  ${DEST_APP} >/dev/null
     echo "Running on $(pwd)------------------"
 
     export APPDIR=./AppDir
     export ARCH=x86_64
     export XDG_DATA_DIR=/usr/share
     appimagetool-x86_64.AppImage AppDir ${APP}.AppImage
-popd
+popd >/dev/null
 echo "--------------------------------------------------------------------------"
 ls -ltr ${DEST_APP}
 
 echo "testing app dir-----------------------------------------------------------"
-# copy more
 
-pushd ${DEST_APP}
-    echo "Press enter to run app: ${DEST_APP}/${APP}.AppImage"
-    read yn
-    ./${APP}.AppImage
-popd
+pushd ${DEST_APP} >/dev/null
+    echo "Go in another terminal, and: 'cd ${DEST_APP}/ && ./${APP}.AppImage'"
+popd >/dev/null
 
-echo "Did it ran ?"
-read yn
-if [[ $yn == 'n' || $yn == 'N' ]]; then
-    echo "Attempting to fix it"
-
-    pushd ${DEST_APP}/AppDir
-        echo "tracing: ./AppRun ./bin/${APP}"
-        strace "./AppRun ./bin/${APP}" > /tmp/apprun_trace.log 2>&1
-    popd
-
-
-    grep "No such file or directory" /tmp/apprun_trace.log  | grep lib | grep openat | \
-    while read x; do
-        libfp=$(echo $x | awk -F"\"" '{print$2}')
-        [[ ${libfp:0:1} == "." ]] && continue
-        lib=$(basename $libfp)
-    cpf $lib
-    done
-
-    echo "rebuilding again"
-
-    echo "--------------------------------------------------------------------------"
-    pushd  ${DEST_APP}
-        echo "Running on $(pwd)------------------"
-
-        export APPDIR=./AppDir
-        export ARCH=x86_64
-        export XDG_DATA_DIR=/usr/share
-        appimagetool-x86_64.AppImage AppDir ${APP}.AppImage
-    popd
-    echo "--------------------------------------------------------------------------"
-    ls -ltr ${DEST_APP}
-
-    echo "testing app dir-----------------------------------------------------------"
-    # copy more
-
-    pushd ${DEST_APP}
-        echo "Press enter to run app...."
-        read yn
-        ./${APP}.AppImage
-    popd
-fi
 echo "your app is in /tmp/..."
-
-
-# echo ${DEST_APP}
-# echo 'TARGET=${DEST_APP}/AppDir/bin/bash'
-# echo 'LINKER=$(patchelf --print-interpreter \"$TARGET\")'
-# echo 'patchelf --set-interpreter \"${LINKER:1}\" \"$TARGET\"'
-
-
-
-
-
-
-
-
-
-
 
