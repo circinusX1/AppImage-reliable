@@ -4,15 +4,15 @@
 ### Makes binary.appImage from a binary to run in any Linux. 
 #### Note: Only on Linux x64 
 
-#### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt
+## copy the script where your binary is:
+./appimage.sh -ARCH=x86_64 -APP=WebRiffStudio -ICON=/home/marius/Pictures/icon.png -QTROOT=/home/marius/Qt -
+
+
+#### ./appimage.sh -ARCH=x86_64 -APP=myapp -ICON=/path/to/myicon.png -QTROOT=/home/marius/Qt QTGCCVER=6.7.3
 ####  resulting binary:                  /tmp/myapp/myapp.AppImage
+###### where QTGCCVER is the /home/marius/Qt/6,7.3 < this version
 
-* Found a funny video:
-
-* 
-    * [![Found this funny video](https://ghitara.com/images/local_gith.png)](https://www.youtube.com/watch?v=OgA7tpEWMzg)
  
-    * 
 
 It tries to resolve all dependencies libs locales files and pack them in the App.
 
@@ -22,6 +22,7 @@ It tries to resolve all dependencies libs locales files and pack them in the App
          -APP=application_binary
          -ICON=icon_file.png
          -QTROOT=path to Qt, aka: /home/marius/Qt, optional
+         -QTGCCVER=6.7.3 
          -LIBS=path to extra libs, optional / not implemented yet
 
 ```
