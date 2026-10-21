@@ -207,8 +207,9 @@ function cpf()
     export DST_DIR=${DESTDIR}
 }
 
-
-LBS=("ld-linux-x86-64.so.2 libtinfo.so.6 libc.so.6 libdl.so.2")
+#  ld-linux-x86-64.so.2, libc.so.6, and libdl.so.2
+LBS=("libtinfo.so.6")
+# LBS=("ld-linux-x86-64.so.2 libtinfo.so.6 libc.so.6 libdl.so.2")
 for L in  ${LBS[@]};do
     P="/usr/lib"
 
